@@ -1,63 +1,47 @@
-"use client";
-import Link from "next/link";
-import { useCart } from "@/context/CartContext";
+'use client';
+import Link from 'next/link';
+import { useCart } from '@/context/CartContext';
+import { FaShoppingCart } from 'react-icons/fa';
 
-import { memo } from "react";
+export default function CartPopup() {
+  const { items, total, removeItem, clearCart, showPopup } = useCart();
 
-function CartPopupInner() {
-    const { items, total } = useCart();
+  if (!showPopup) return null;
 
-    if (!items || items.length === 0) return null;
-
-    return (
+  return (
+    <div className="absolute top-12 right-0 w-80 bg-white text-black shadow-lg p-4 rounded-md z-50">
+      {items.length === 0 ? (
+        <div className="flex items-center gap-2">
+          <FaShoppingCart /> Ostoskori on tyhjä
+        </div>
+      ) : (
         <>
-            {/* Desktop / Tablet dropdown */}
-            <div className="hidden md:block absolute right-0 top-full mt-2 w-64 bg-white text-black border rounded-md p-4 z-50 animate-cart-popup-enter shadow-lg">
-                <ul>
-                    {items.map((item) => (
-                        <li key={item.id} className="flex justify-between mb-2">
-                            <span>{item.name} x {item.quantity}</span>
-                            <span>{item.price} €</span>
-                        </li>
-                    ))}
-                </ul>
-                <div className="border-t mt-2 pt-2 flex justify-between font-semibold">
-                    <span>Yhteensä</span>
-                    <span>{total.toFixed(2)} €</span>
-                </div>
-                <Link href="/checkout">
-                    <button className="mt-2 w-full bg-black text-white px-4 py-2 rounded-md">
-                        Siirry kassalle
-                    </button>
-                </Link>
-            </div>
-
-            {/* Mobile panel under header */}
-            <div className="md:hidden fixed left-0 right-0 top-20 bg-white text-black border-t border-b p-4 z-30 animate-cart-popup-enter shadow-md">
-                <div className="max-w-6xl mx-auto">
-                    <ul>
-                        {items.map((item) => (
-                            <li key={item.id} className="flex justify-between mb-2">
-                                <span>{item.name} x {item.quantity}</span>
-                                <span>{item.price} €</span>
-                            </li>
-                        ))}
-                    </ul>
-                    <div className="border-t mt-2 pt-2 flex justify-between font-semibold">
-                        <span>Yhteensä</span>
-                        <span>{total.toFixed(2)} €</span>
+          <h3 className="font-semibold mb-2 flex items-center gap-2">
+            <FaShoppingCart /> Ostoskori
+          </h3>
+          <ul className="space-y-2 max-h-64 overflow-y-auto">
+            {items.map((item, idx) => (
+              <li key={`${item.id}-${idx}`} className="flex justify-between items-center border-b pb-1">
+                <div>
+                  <div className="font-medium">{item.name}</div>
+                  {item.options && Object.keys(item.options).length > 0 && (
+                    <div className="text-sm text-gray-600">
+                      {Object.entries(item.options).map(([key, val]) => `${key}: ${val}`).join(', ')}
                     </div>
-                    <Link href="/checkout">
-                        <button className="mt-2 w-full bg-black text-white px-4 py-2 rounded-md">
-                            Siirry kassalle
-                        </button>
-                    </Link>
+                  )}
+                  <div className="text-sm">{item.quantity} × {item.price.toFixed(2)} €</div>
                 </div>
-            </div>
+                <button onClick={() => removeItem(item.id)} className="text-red-500 text-sm">X</button>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2 font-bold">Yhteensä: {total.toFixed(2)} €</div>
+          <Link href="/checkout">
+            <button className="mt-2 w-full bg-black text-white py-2 rounded-md">Siirry kassalle</button>
+          </Link>
+          <button onClick={clearCart} className="mt-2 w-full bg-gray-200 text-black py-1 rounded-md">Tyhjennä kori</button>
         </>
-    );
+      )}
+    </div>
+  );
 }
-
-const CartPopup = memo(CartPopupInner);
-
-export default CartPopup;
