@@ -1,32 +1,41 @@
-# GitLab .gitlab-ci.yml
-# https://docs.gitlab.com/ee/ci/yaml/gitlab_ci_yaml.html
-# https://docs.gitlab.com/ee/ci/yaml/index.html
-# https://create-react-app.dev/docs/advanced-configuration/
+image: node:20
 
-image: node             # Use node image to build the React app
-build:                  # Build CRA - Create React App
-  stage: build          # Name the stages involved in the pipeline
-  variables:            # CRA is hosted web server root
-    PUBLIC_URL: /test   # Define subpath - MODIFY YOUR REPO NAME HERE
-  script:               # Run npm's
-    - npm install       # Install all dependencies
-    - npm run build     # Build for production  
-  tags:                 # List of tags that are used to select a runner
-    - general
-  artifacts:            # List of files and directories to attach to a job on success
-    paths:              # The built files for Gitlab Pages to serve
-      - build
-pages:                  # Job name for gitlab to recognise this results in assets for Gitlab Pages
-  stage: deploy         # Name the stages involved in the pipeline
-  dependencies:         # Restrict which artifacts passed to a specific job 
-    - build
+stages:
+  - install
+  - build
+  - deploy
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+install:
+  stage: install
   script:
-    - rm -rf public     # CRA and gitlab pages both use the public folder
-    - mv build public   # Move build files to public dir for Gitlab Pages  
-  tags:                 # List of tags that are used to select a runner
-    - general  
-  artifacts:            # List of files and directories to attach to a job on success
-    paths:              # The built files for Gitlab Pages to serve      
-      - public   
-  only:                 # SPECIFY YOUR BRACH HERE, usually master or main    
+    - npm ci
+  artifacts:
+    paths:
+      - node_modules/
+
+build:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - .next
+      - package.json
+      - package-lock.json
+      - public
+
+pages:
+  stage: deploy
+  script:
+    - npm run export
+    - mv out public
+  artifacts:
+    paths:
+      - public
+  only:
     - main
