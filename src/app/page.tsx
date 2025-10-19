@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Carousel from '../_components/carousel/carousel';
 import { getPopularProducts } from "@/lib/api/api";
+import type { WooProduct } from "@/types/woocommerce";
 
 export default async function Home() {
   const categoryImages = [
@@ -10,7 +11,7 @@ export default async function Home() {
     { name: "Lisämittaritelineet", image: "/images/lisämittaritelineet.webp", slug: "lisämittaritelineet" },
   ];
 
-  const popularProducts = await getPopularProducts();
+  const popularProducts: WooProduct[] = await getPopularProducts();
 
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-gray-100 py-8 space-y-16">
@@ -22,7 +23,7 @@ export default async function Home() {
       <section className="w-full max-w-6xl">
         <h2 className="text-2xl font-bold mb-4">Myydyimmät</h2>
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {popularProducts.map((product: any) => (
+          {popularProducts.map((product: WooProduct) => (
             <li key={product.id} className="border rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
               <Link href={`/tuote/${product.slug}`} className="flex flex-col items-center p-4">
                 <Image

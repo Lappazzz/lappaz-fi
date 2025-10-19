@@ -2,15 +2,16 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import ProductLoading from '@/_components/productloading/ProductLoading';
+import { WooProduct } from '@/types/woocommerce';
 
 interface Props {
-  products: any[];
+  products: WooProduct[];
   mainCategory: string;
   subCategory: string;
 }
 
 export default function MainCategoryPageClient({ products, mainCategory, subCategory }: Props) {
-  const toTitle = (slug: string | undefined) =>
+  const toTitle = (slug?: string) =>
     slug?.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) ?? '';
 
   if (!products) return <ProductLoading />;
@@ -22,7 +23,7 @@ export default function MainCategoryPageClient({ products, mainCategory, subCate
       </h1>
 
       <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {products.map((product: any) => (
+        {products.map((product) => (
           <li
             key={product.id}
             className="border rounded-lg shadow-md cursor-pointer overflow-hidden transition-shadow duration-200 hover:shadow-lg"

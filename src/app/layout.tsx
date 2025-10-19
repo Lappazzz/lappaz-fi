@@ -1,11 +1,9 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 // Components import
 import Footer from "../_components/footer";
 import Header from "../_components/_header/index";
-import { CartProvider } from "@/context/CartContext"; // <-- import cart context
+import { CartProvider } from "@/context/CartContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

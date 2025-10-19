@@ -1,9 +1,10 @@
 'use client';
 import { useCart } from '@/context/CartContext';
 import { useState } from 'react';
+import type { CartItem } from '@/types/woocommerce';
 
 export default function CheckoutDetailsPage() {
-  const { items, total, removeItem, updateItemQuantity } = useCart();
+  const { items, total } = useCart();
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -23,7 +24,6 @@ export default function CheckoutDetailsPage() {
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
     alert('Tilauksesi on vastaanotettu!');
-    // Clear cart or send order
   };
 
   return (
@@ -32,59 +32,19 @@ export default function CheckoutDetailsPage() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Toimitustiedot</h2>
         <form className="space-y-4" onSubmit={handlePlaceOrder}>
-          <input
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            placeholder="Nimi"
-            className="w-full border px-3 py-2 rounded-md"
-            required
-          />
-          <input
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            placeholder="Katuosoite"
-            className="w-full border px-3 py-2 rounded-md"
-            required
-          />
-          <input
-            name="city"
-            value={formData.city}
-            onChange={handleInputChange}
-            placeholder="Kaupunki"
-            className="w-full border px-3 py-2 rounded-md"
-            required
-          />
-          <input
-            name="postal"
-            value={formData.postal}
-            onChange={handleInputChange}
-            placeholder="Postinumero"
-            className="w-full border px-3 py-2 rounded-md"
-            required
-          />
-          <input
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            placeholder="Sähköposti"
-            type="email"
-            className="w-full border px-3 py-2 rounded-md"
-            required
-          />
-          <input
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-            placeholder="Puhelin"
-            className="w-full border px-3 py-2 rounded-md"
-            required
-          />
-          <button
-            type="submit"
-            className="px-6 py-2 bg-black text-white rounded-md mt-4"
-          >
+          {['name','address','city','postal','email','phone'].map((field) => (
+            <input
+              key={field}
+              name={field}
+              value={formData[field as keyof typeof formData]}
+              onChange={handleInputChange}
+              placeholder={field === 'postal' ? 'Postinumero' : field.charAt(0).toUpperCase() + field.slice(1)}
+              type={field === 'email' ? 'email' : 'text'}
+              className="w-full border px-3 py-2 rounded-md"
+              required
+            />
+          ))}
+          <button type="submit" className="px-6 py-2 bg-black text-white rounded-md mt-4">
             Lähetä tilaus
           </button>
         </form>
@@ -94,7 +54,7 @@ export default function CheckoutDetailsPage() {
       <div className="border rounded-md p-4 bg-gray-50">
         <h2 className="text-2xl font-bold mb-4">Tilauksen yhteenveto</h2>
         <ul className="space-y-4 mb-4">
-          {items.map((item: any) => (
+          {items.map((item: CartItem) => (
             <li key={item.id} className="flex justify-between">
               <div>
                 <div className="font-semibold">{item.name}</div>
