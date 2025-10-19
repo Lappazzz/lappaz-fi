@@ -66,14 +66,14 @@ export default function Carousel({ categories }: CarouselProps) {
         {/* Prev / Next Buttons */}
         <button
             onClick={prevSlide}
-            className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-2 text-black"
+            className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-2 text-black z-20"
             aria-label="Previous slide"
         >
             &#10094;
         </button>
         <button
             onClick={nextSlide}
-            className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-2 text-black"
+            className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white bg-opacity-50 rounded-full p-2 text-black z-20"
             aria-label="Next slide"
         >
             &#10095;
