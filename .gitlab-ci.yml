@@ -1,17 +1,26 @@
 stages:
-  - test
+  - install
   - build
+  - lint
+  - deploy
 
-variables:
-  NODE_ENV: production
+# Cache node_modules to speed up pipelines
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
 
-test:
-  stage: test
+# Install dependencies
+install_dependencies:
+  stage: install
   image: node:20
   script:
     - npm ci
-    - npm test
+  artifacts:
+    paths:
+      - node_modules/
 
+# Build the Next.js project
 build:
   stage: build
   image: node:20
@@ -19,4 +28,19 @@ build:
     - npm run build
   artifacts:
     paths:
-      - dist/
+      - .next
+
+lint:
+  stage: lint
+  image: node:20
+  script:
+    - npm run lint
+
+# Deploy stage
+deploy:
+  stage: deploy
+  image: node:20
+  script:
+    - echo "Deploying..."
+  only:
+    - main
