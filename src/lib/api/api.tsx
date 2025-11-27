@@ -8,9 +8,6 @@ const authHeader = (): string => {
 
 const API_URL = process.env.WC_STORE_URL;
 
-if (!API_URL) {
-  throw new Error('❌ NEXT_PUBLIC_WC_STORE_URL is not defined in .env.local');
-}
 // Search products by query
 export const searchProducts = async (query: string): Promise<WooProduct[]> => {
   if (!query.trim()) return [];
