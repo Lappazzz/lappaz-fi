@@ -56,11 +56,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     timeoutRef.current = setTimeout(() => setShowPopup(false), 3000);
   }, []);
 
-  const removeItem = useCallback((id: number | string, options?: Record<string, string>) => {
-    setItems(prev =>
-      prev.filter(i => i.id !== id || JSON.stringify(i.options) !== JSON.stringify(options))
-    );
-  }, []);
+const removeItem = useCallback((id: number | string, options?: Record<string, string>) => {
+  setItems(prev =>
+    prev.filter(i => {
+      const sameId = i.id === id;
+      const sameOptions =
+        JSON.stringify(i.options || {}) === JSON.stringify(options || {});
+      return !(sameId && sameOptions);
+    })
+  );
+}, []);
+
 
   const clearCart = useCallback(() => setItems([]), []);
 

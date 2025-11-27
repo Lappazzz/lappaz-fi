@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useCart } from '@/context/CartContext';
+import { useCart } from '@/_context/CartContext';
 import { FaShoppingCart } from 'react-icons/fa';
 
 export default function CartPopup() {
@@ -31,7 +31,8 @@ export default function CartPopup() {
                   )}
                   <div className="text-sm">{item.quantity} × {item.price.toFixed(2)} €</div>
                 </div>
-                <button onClick={() => removeItem(item.id)} className="text-red-500 text-sm">X</button>
+                <button onClick={() => removeItem(item.id, item.options)} className="text-red-500 text-sm">X</button>
+
               </li>
             ))}
           </ul>

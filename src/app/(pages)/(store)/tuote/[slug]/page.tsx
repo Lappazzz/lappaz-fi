@@ -1,6 +1,13 @@
+import { notFound } from 'next/navigation';
+import type { ComponentProps } from 'react';
 import { getProductBySlug, getProductVariations } from '@/lib/api/api';
 import ProductDetailsClient from '@/_components/ProductDetailsClient';
-import type { WooVariation, Product } from '@/types/woocommerce';
+import type { WooVariation } from '@/types/woocommerce';
+
+// Infer prop types from ProductDetailsClient so we stay in sync
+type ProductDetailsProps = ComponentProps<typeof ProductDetailsClient>;
+type ProductDetailsProduct = ProductDetailsProps['product'];
+type ProductDetailsVariations = NonNullable<ProductDetailsProps['variations']>;
 
 export default async function ProductPage({
   params,
@@ -8,30 +15,44 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
 
+  const product = await getProductBySlug(slug); // WooProduct | undefined
   if (!product) {
-    throw new Error('Product not found');
+    notFound();
   }
 
-  let variations: WooVariation[] = [];
+  let wooVariations: WooVariation[] = [];
   if (product.type === 'variable') {
-    variations = await getProductVariations(product.id);
+    wooVariations = await getProductVariations(product.id);
   }
 
-  const productForClient: Product = {
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    price: String(product.price), 
-    type: product.type === 'variable' ? 'variable' : 'simple',
-    images: product.images?.map(img => ({ src: img.src })) || [],
-    categories: product.categories?.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
+  // Normalize product.price -> string | undefined
+  // Normalize attributes.options -> string[] (no undefined)
+  const normalizedProduct: ProductDetailsProduct = {
+    ...product,
+    price:
+      product.price !== undefined && product.price !== null
+        ? String(product.price)
+        : undefined,
+    attributes: product.attributes?.map((attr) => ({
+      name: attr.name,
+      variation: Boolean(attr.variation),
+      options: attr.options ?? [], // ensure string[]
     })),
   };
 
-  return <ProductDetailsClient product={productForClient} variations={variations} />;
+  // Normalize variations price -> string
+  const normalizedVariations: ProductDetailsVariations = wooVariations.map(
+    (v) => ({
+      ...v,
+      price: String(v.price),
+    })
+  );
+
+  return (
+    <ProductDetailsClient
+      product={normalizedProduct}
+      variations={normalizedVariations}
+    />
+  );
 }

@@ -1,92 +1,263 @@
 'use client';
-
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useState } from 'react';
-import type { WooProduct, WooVariation } from '@/types/woocommerce';
+import { useCart } from '@/_context/CartContext';
+
+type ProductAttribute = {
+  name: string;
+  options: string[];
+  variation: boolean;
+};
+
+type ProductVariation = {
+  id: number;
+  price: string;
+  attributes?: { name: string; option: string }[];
+};
+
+type ProductReview = {
+  id: number;
+  author: string;
+  rating: number;
+  content: string;
+};
+
+type Product = {
+  id: number;
+  name: string;
+  type: 'simple' | 'variable';
+  price?: string;
+  images?: { src: string }[];
+  short_description?: string;
+  description?: string;
+  attributes?: ProductAttribute[];
+  reviews?: ProductReview[];
+};
 
 interface ProductDetailsClientProps {
-  product: WooProduct;
-  variations?: WooVariation[];
+  product: Product;
+  variations?: ProductVariation[];
 }
 
-export default function ProductDetailsClient({ product, variations = [] }: ProductDetailsClientProps) {
-  const [selectedVariation, setSelectedVariation] = useState<WooVariation | null>(variations[0] || null);
+export default function ProductDetailsClient({ product, variations }: ProductDetailsClientProps) {
+  const { addItem } = useCart();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [selectedVariation, setSelectedVariation] = useState<ProductVariation | null>(null);
+  const [localReviews] = useState<ProductReview[]>(product.reviews || []);
 
-  const price = selectedVariation
-    ? selectedVariation.price
-    : parseFloat(String(product.price));
+  // Set default variation options
+  useEffect(() => {
+    if (product.type !== 'variable' || !product.attributes) {
+      setSelectedOptions({});
+      return;
+    }
 
-  const handleQuantityChange = (delta: number) => {
-    setQuantity(prev => Math.max(prev + delta, 1));
+    const defaults: Record<string, string> = {};
+    product.attributes.forEach(attr => {
+      if (attr.variation && attr.options.length > 0) {
+        defaults[attr.name] = attr.options[0];
+      }
+    });
+    setSelectedOptions(defaults);
+  }, [product.type, product.attributes]);
+
+  // Update selected variation when options change
+  useEffect(() => {
+    if (product.type === 'variable' && variations?.length) {
+      const found = variations.find(v =>
+        Object.entries(selectedOptions).every(([key, val]) =>
+          v.attributes?.some(a => a.name === key && a.option === val)
+        )
+      );
+      setSelectedVariation(found || null);
+    } else {
+      setSelectedVariation(null);
+    }
+  }, [selectedOptions, variations, product.type]);
+
+  const getPriceDisplay = () => {
+    if (product.type === 'variable' && variations?.length) {
+      if (selectedVariation) {
+        const price = parseFloat(selectedVariation.price);
+        return !isNaN(price) ? `${price.toFixed(2)} €` : 'Hinta ei saatavilla';
+      }
+
+      const prices = variations
+        .map(v => parseFloat(v.price))
+        .filter(p => !isNaN(p))
+        .sort((a, b) => a - b);
+
+      if (!prices.length) return 'Hinta ei saatavilla';
+      if (prices[0] === prices[prices.length - 1]) return `${prices[0].toFixed(2)} €`;
+      return `${prices[0].toFixed(2)} - ${prices[prices.length - 1].toFixed(2)} €`;
+    }
+
+    const price = parseFloat(product.price || '0');
+    return !isNaN(price) ? `${price.toFixed(2)} €` : 'Hinta ei saatavilla';
   };
 
-  return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
+  const handleAddToCart = () => {
+    if (product.type === 'variable' && !selectedVariation) return;
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    addItem({
+      id: selectedVariation?.id || product.id,
+      name: product.name,
+      price: parseFloat(selectedVariation?.price || product.price || '0'),
+      quantity,
+      options: selectedOptions,
+    });
+  };
+
+  const canAddToCart = product.type === 'variable' ? !!selectedVariation : true;
+
+  return (
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        {/* Images */}
         <div>
           <Image
-            src={selectedVariation?.image?.src || product.images?.[0]?.src || '/images/Tuotekuva-tulossa.webp'}
-            alt={selectedVariation?.image?.alt || product.images?.[0]?.alt || product.name}
-            width={400}
-            height={400}
-            className="w-full h-full object-cover rounded-md"
+            src={product.images?.[currentImageIndex]?.src || '/images/Tuotekuva-tulossa.webp'}
+            width={600}
+            height={600}
+            alt={product.name}
+            className="w-full object-cover rounded-md"
           />
+          <div className="flex gap-4 mt-4 overflow-x-auto">
+            {product.images?.map((img, idx) => (
+              <Image
+                key={idx}
+                src={img.src}
+                width={100}
+                height={100}
+                alt={`Kuva ${idx + 1}`}
+                className="cursor-pointer w-24 h-24 rounded-md object-cover"
+                onClick={() => setCurrentImageIndex(idx)}
+              />
+            ))}
+          </div>
         </div>
 
-        <div className="flex flex-col space-y-4">
-          <p className="text-xl font-semibold">{price.toFixed(2)} €</p>
+        {/* Product Info */}
+        <div>
+          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+          <p className="text-2xl text-gray-800 mb-4">{getPriceDisplay()}</p>
 
-          {variations.length > 0 && (
-            <div>
-              <label className="block font-medium mb-1">Valitse variaatio:</label>
-              <select
-                className="border px-3 py-2 rounded-md w-full"
-                value={selectedVariation?.id || ''}
-                onChange={e => {
-                  const v = variations.find(v => v.id === Number(e.target.value));
-                  setSelectedVariation(v || null);
-                }}
-              >
-                {variations.map(v => (
-                  <option key={v.id} value={v.id}>
-                    {v.attributes.map(attr => `${attr.name}: ${attr.option}`).join(', ')} – {v.price.toFixed(2)} €
-                  </option>
+          {product.short_description && (
+            <div
+              className="text-gray-700 mb-4"
+              dangerouslySetInnerHTML={{ __html: product.short_description }}
+            />
+          )}
+
+          {/* Variation selectors */}
+          {product.type === 'variable' && product.attributes?.some(a => a.variation) && (
+            <div className="space-y-4 mb-6">
+              {product.attributes
+                .filter(a => a.variation)
+                .map(attr => (
+                  <div key={attr.name}>
+                    <label className="block mb-1 font-medium">{attr.name}</label>
+                    <ul className="flex gap-2 flex-wrap">
+                      {attr.options.map(opt => (
+                        <li
+                          key={opt}
+                          className={`px-3 py-1 border rounded-md cursor-pointer ${
+                            selectedOptions[attr.name] === opt ? 'bg-black text-white' : 'bg-gray-100'
+                          }`}
+                          onClick={() =>
+                            setSelectedOptions(prev => ({
+                              ...prev,
+                              [attr.name]: opt,
+                            }))
+                          }
+                        >
+                          {opt}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </select>
             </div>
           )}
 
-          <div className="flex items-center space-x-2">
+          {/* Quantity + Add to Cart */}
+          <div className="flex items-center gap-4 mb-4">
             <button
-              className="px-3 py-1 bg-gray-200 rounded-md"
-              onClick={() => handleQuantityChange(-1)}
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="px-3 py-1 border"
             >
               -
             </button>
-            <span>{quantity}</span>
+            <input
+              type="number"
+              value={quantity}
+              onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-16 text-center border"
+            />
             <button
-              className="px-3 py-1 bg-gray-200 rounded-md"
-              onClick={() => handleQuantityChange(1)}
+              onClick={() => setQuantity(quantity + 1)}
+              className="px-3 py-1 border"
             >
               +
             </button>
           </div>
-
-          <button className="mt-4 px-6 py-2 bg-black text-white rounded-md">
+          <button
+            onClick={handleAddToCart}
+            disabled={!canAddToCart}
+            className={`px-6 py-2 rounded-md text-white ${
+              canAddToCart ? 'bg-black hover:bg-gray-800' : 'bg-gray-400 cursor-not-allowed'
+            }`}
+          >
             Lisää ostoskoriin
           </button>
         </div>
       </div>
 
-      {product.description && (
-        <div className="mt-6">
-          <h2 className="text-2xl font-bold mb-2">Kuvaus</h2>
-          <p>{product.description}</p>
+      {/* Description, Details, Reviews */}
+      <div className="mt-12 space-y-6">
+        {product.description && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Kuvaus</h2>
+            <div dangerouslySetInnerHTML={{ __html: product.description }} />
+          </div>
+        )}
+
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Lisätiedot</h2>
+          {product.attributes?.filter(a => !a.variation).length ? (
+            <ul className="list-disc ml-6">
+              {product.attributes
+                .filter(a => !a.variation)
+                .map(a => (
+                  <li key={a.name}>
+                    <strong>{a.name}:</strong> {a.options.join(', ')}
+                  </li>
+                ))}
+            </ul>
+          ) : (
+            <div>Ei lisätietoja saatavilla.</div>
+          )}
         </div>
-      )}
+
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Arviot</h2>
+          {localReviews.length ? (
+            <ul className="space-y-4 mb-6">
+              {localReviews.map(rev => (
+                <li key={rev.id} className="border rounded-md p-4 bg-gray-50">
+                  <div className="font-semibold">{rev.author}</div>
+                  <div>{'★'.repeat(rev.rating)}</div>
+                  <div>{rev.content}</div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="mb-6">Ei arvioita vielä.</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,10 +1,11 @@
 'use client';
-import { useCart } from '@/context/CartContext';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useCart } from '@/_context/CartContext';
 import type { CartItem } from '@/types/woocommerce';
+import KlarnaWidget from '@/_components/KlarnaWidget';
 
 export default function CheckoutDetailsPage() {
-  const { items, total } = useCart();
+  const { items, total, clearCart } = useCart();
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -14,6 +15,9 @@ export default function CheckoutDetailsPage() {
     phone: '',
   });
 
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   const VAT_RATE = 25.5;
   const vatAmount = total * (VAT_RATE / (100 + VAT_RATE));
 
@@ -21,33 +25,99 @@ export default function CheckoutDetailsPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert('Tilauksesi on vastaanotettu!');
-  };
+  // Klarna available only when cart not empty and all fields filled
+  const canUseKlarna = useMemo(
+    () =>
+      items.length > 0 &&
+      formData.name &&
+      formData.address &&
+      formData.city &&
+      formData.postal &&
+      formData.email &&
+      formData.phone,
+    [items.length, formData]
+  );
+
+  // Payload for Klarna session API
+  const klarnaPayload = useMemo(
+    () => ({
+      items: items.map((item: CartItem) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,      // euros
+        quantity: item.quantity,
+      })),
+      customer: {
+        name: formData.name,
+        address: formData.address,
+        city: formData.city,
+        postal: formData.postal,
+        email: formData.email,
+        phone: formData.phone,
+      },
+      vatRatePercent: VAT_RATE,
+    }),
+    [items, formData]
+  );
 
   return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-      {/* Left: Delivery Details */}
+      {/* Left: Delivery Details + Klarna */}
       <div>
         <h2 className="text-2xl font-bold mb-4">Toimitustiedot</h2>
-        <form className="space-y-4" onSubmit={handlePlaceOrder}>
+        {/* prevent default; Klarna handles payment */}
+        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           {['name','address','city','postal','email','phone'].map((field) => (
             <input
               key={field}
               name={field}
               value={formData[field as keyof typeof formData]}
               onChange={handleInputChange}
-              placeholder={field === 'postal' ? 'Postinumero' : field.charAt(0).toUpperCase() + field.slice(1)}
+              placeholder={
+                field === 'postal'
+                  ? 'Postinumero'
+                  : field.charAt(0).toUpperCase() + field.slice(1)
+              }
               type={field === 'email' ? 'email' : 'text'}
               className="w-full border px-3 py-2 rounded-md"
               required
             />
           ))}
-          <button type="submit" className="px-6 py-2 bg-black text-white rounded-md mt-4">
-            Lähetä tilaus
-          </button>
         </form>
+
+        {/* Klarna payment section */}
+        <div className="mt-6">
+          <h3 className="text-xl font-semibold mb-2">Maksu</h3>
+
+          {!canUseKlarna ? (
+            <div className="text-sm text-gray-600">
+              Täytä toimitustiedot ja varmista, että ostoskorissa on tuotteita,
+              niin Klarna-maksu tulee näkyviin.
+            </div>
+          ) : (
+            <KlarnaWidget
+              payload={klarnaPayload}
+              onSuccess={(oid) => {
+                setOrderId(oid);
+                setError(null);
+                clearCart();
+              }}
+              onError={(msg) => setError(msg)}
+            />
+          )}
+
+          {orderId && (
+            <div className="mt-4 p-3 rounded bg-green-100 text-green-800">
+              Tilaus vahvistettu. Klarna order ID: <strong>{orderId}</strong>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 p-3 rounded bg-red-100 text-red-800">
+              {error}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Right: Order Summary */}
@@ -71,14 +141,16 @@ export default function CheckoutDetailsPage() {
                   {item.quantity} × {item.price.toFixed(2)} €
                 </div>
               </div>
-              <div className="font-semibold">{(item.quantity * item.price).toFixed(2)} €</div>
+              <div className="font-semibold">
+                {(item.quantity * item.price).toFixed(2)} €
+              </div>
             </li>
           ))}
         </ul>
 
         <div className="border-t pt-4 space-y-1">
           <div className="flex justify-between font-semibold">
-            <span>Alv {VAT_RATE}% sisältyy:</span>
+            <span>Alv {VAT_RATE}% osuus:</span>
             <span>{vatAmount.toFixed(2)} €</span>
           </div>
           <div className="flex justify-between text-xl font-bold">
