@@ -1,3 +1,4 @@
+import "./globals.css";
 // Components import
 import Footer from "../_components/footer";
 import Header from "../_components/_header/index";

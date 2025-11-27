@@ -1,39 +1,34 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+
+import { useEffect, useRef, useState } from 'react';
 import { FaSearch, FaSpinner } from 'react-icons/fa';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { WooProduct } from '@/types/woocommerce';
-import { getProducts } from '@/lib/api/api';
 
 export default function SearchBar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<WooProduct[]>([]);
-  const [allProducts, setAllProducts] = useState<WooProduct[]>([]);
   const [loading, setLoading] = useState(false);
-  const [active, setActive] = useState(false);
+  const [searchActive, setSearchActive] = useState(false);
 
-  const searchRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  /** Load all products once */
+  // Close search when clicking outside
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const products = await getProducts();
-        if (mounted) setAllProducts(products);
-      } catch (err) {
-        console.error('❌ Product preload failed:', err);
+    const handleClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setSearchActive(false);
+        setSearchResults([]);
       }
-    })();
-    return () => {
-      mounted = false;
     };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  /** Disable body scroll when search is active */
+  // Disable scroll + blur background when active
   useEffect(() => {
-    if (active) {
+    if (searchActive) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -41,80 +36,76 @@ export default function SearchBar() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [active]);
+  }, [searchActive]);
 
-  /** Debounced local search */
+  // Debounced fetch to /api/products/search
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!searchActive) return;
+
+    if (searchQuery.trim().length < 2) {
       setSearchResults([]);
       return;
     }
 
-    const timeout = setTimeout(() => {
-      const q = searchQuery.trim().toLowerCase();
-      if (q.length > 1 && allProducts.length) {
+    const timeout = setTimeout(async () => {
+      try {
         setLoading(true);
-        const results = allProducts.filter(p => p.name.toLowerCase().includes(q));
-        setSearchResults(results);
-        setLoading(false);
-      } else {
+        const res = await fetch(
+          `/api/products/search?q=${encodeURIComponent(searchQuery.trim())}`
+        );
+        if (!res.ok) {
+          setSearchResults([]);
+        } else {
+          const data: WooProduct[] = await res.json();
+          setSearchResults(data);
+        }
+      } catch (e) {
+        console.error('Search error:', e);
         setSearchResults([]);
+      } finally {
+        setLoading(false);
       }
     }, 250);
 
     return () => clearTimeout(timeout);
-  }, [searchQuery, allProducts]);
+  }, [searchQuery, searchActive]);
 
-  /** Click outside closes search */
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setActive(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  /** Dynamic height */
-  const containerHeight = Math.min(500, Math.max(150, searchResults.length * 70));
+  const showDropdown = searchActive && (loading || searchQuery.trim().length >= 2);
 
   return (
     <>
-      {/* Overlay for blur + disable interaction */}
-      {active && (
+      {/* Background overlay for blur + click-to-close */}
+      {searchActive && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 cursor-pointer"
-          onClick={() => setActive(false)}
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm"
+          onClick={() => setSearchActive(false)}
         />
       )}
 
-      {/* Search container */}
       <div
-        ref={searchRef}
-        className="relative flex items-center w-full lg:w-2/5 mx-2 z-50"
+        ref={containerRef}
+        className="relative flex items-center w-full lg:w-2/5 mx-2 z-40"
       >
         <input
           type="text"
           placeholder="Hae tuotteita..."
           className="px-4 py-2 rounded-lg bg-neutral-700 text-white w-full pl-10 focus:outline-none"
           value={searchQuery}
-          onFocus={() => setActive(true)}
+          onFocus={() => setSearchActive(true)}
           onChange={e => setSearchQuery(e.target.value)}
         />
         <FaSearch className="absolute left-3 text-white" />
 
-        {active && (
-          <div
-            className="absolute top-full left-0 w-full bg-neutral-700 border border-neutral-600 rounded-lg mt-1 overflow-auto z-50 transition-all"
-            style={{ maxHeight: `${containerHeight}px` }}
-          >
+        {showDropdown && (
+          <div className="absolute top-full left-0 w-full bg-neutral-700 border border-neutral-600 rounded-lg mt-1 max-h-96 overflow-auto shadow-lg">
             {loading ? (
               <div className="flex justify-center items-center p-4">
                 <FaSpinner className="animate-spin text-gray-300 text-lg" />
               </div>
-            ) : searchQuery.length <= 1 ? (
-              <div className="p-3 text-center text-gray-300">Kirjoita vähintään 2 merkkiä</div>
+            ) : searchQuery.trim().length < 2 ? (
+              <div className="p-3 text-center text-gray-300">
+                Kirjoita vähintään 2 merkkiä
+              </div>
             ) : searchResults.length > 0 ? (
               searchResults.map(product => (
                 <Link
@@ -123,7 +114,7 @@ export default function SearchBar() {
                   className="flex items-center gap-3 p-2 hover:bg-neutral-600 transition"
                   onClick={() => {
                     setSearchQuery('');
-                    setActive(false);
+                    setSearchActive(false);
                   }}
                 >
                   {product.images?.[0] && (
@@ -137,7 +128,11 @@ export default function SearchBar() {
                   )}
                   <div className="flex flex-col">
                     <span className="truncate">{product.name}</span>
-                    <span className="text-sm text-gray-300">{product.price} €</span>
+                    {product.price && (
+                      <span className="text-sm text-gray-300">
+                        {product.price} €
+                      </span>
+                    )}
                   </div>
                 </Link>
               ))
