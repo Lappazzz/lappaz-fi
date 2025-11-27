@@ -1,12 +1,12 @@
 import type { WooProduct, WooVariation } from '@/types/woocommerce';
 
 const authHeader = (): string => {
-  const user = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-  const pass = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
+  const user = process.env.WC_CONSUMER_KEY!;
+  const pass = process.env.WC_CONSUMER_SECRET!;
   return 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64');
 };
 
-const API_URL = process.env.NEXT_PUBLIC_WC_STORE_URL;
+const API_URL = process.env.WC_STORE_URL;
 
 if (!API_URL) {
   throw new Error('❌ NEXT_PUBLIC_WC_STORE_URL is not defined in .env.local');
