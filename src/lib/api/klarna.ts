@@ -1,12 +1,11 @@
-// keep your existing types
-type KlarnaCartItem = {
+export type KlarnaCartItem = {
   id: string | number;
   name: string;
-  price: number;   // euros
+  price: number;
   quantity: number;
 };
 
-type KlarnaCustomer = {
+export type KlarnaCustomer = {
   name: string;
   address: string;
   city: string;
@@ -15,10 +14,9 @@ type KlarnaCustomer = {
   phone: string;
 };
 
-type KlarnaOrderParams = {
+export type KlarnaOrderParams = {
   items: KlarnaCartItem[];
   customer: KlarnaCustomer;
-  vatRatePercent: number;
 };
 
 const KLARNA_KEY = process.env.KLARNA_KEY!;
@@ -34,16 +32,26 @@ const auth =
 
 const toCents = (v: number) => Math.round(v * 100);
 
-export async function createKpSession(params: KlarnaOrderParams) {
-  const { items, customer, vatRatePercent } = params;
+// ALV 25,5 %
+const VAT_PERCENT = 25.5;
 
-  const taxRate = Math.round(vatRatePercent * 100); // 25.5 -> 2550
+/**
+ * Klarna expects:
+ * - prices in minor units (cents)
+ * - tax_rate as integer in basis points (25.5% -> 2550)
+ * - total_tax_amount such that total_amount = net + tax
+ */
+function buildOrderLines(items: KlarnaCartItem[]) {
+  const taxRate = Math.round(VAT_PERCENT * 100); // 25.5 -> 2550
 
-  const order_lines = items.map((i) => {
+  return items.map((i) => {
     const unit_price = toCents(i.price);
     const total_amount = unit_price * i.quantity;
+
+    // tax_amount = total - total / (1 + VAT)
     const tax_amount =
-      total_amount - Math.round(total_amount / (1 + vatRatePercent / 100));
+      total_amount -
+      Math.round(total_amount / (1 + VAT_PERCENT / 100));
 
     return {
       type: 'physical',
@@ -56,6 +64,12 @@ export async function createKpSession(params: KlarnaOrderParams) {
       tax_rate: taxRate,
     };
   });
+}
+
+export async function createKpSession(params: KlarnaOrderParams) {
+  const { items, customer } = params;
+
+  const order_lines = buildOrderLines(items);
 
   const order_amount = order_lines.reduce((s, l) => s + l.total_amount, 0);
   const order_tax_amount = order_lines.reduce(
@@ -63,7 +77,9 @@ export async function createKpSession(params: KlarnaOrderParams) {
     0
   );
 
-  const kp_body = {
+  const body = {
+    acquiring_channel: 'ECOMMERCE',
+    intent: 'buy',
     purchase_country: 'FI',
     purchase_currency: 'EUR',
     locale: 'fi-FI',
@@ -87,12 +103,12 @@ export async function createKpSession(params: KlarnaOrderParams) {
       Authorization: auth,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(kp_body),
+    body: JSON.stringify(body),
   });
 
   const kp_text = await kp_res.text();
   if (!kp_res.ok) {
-    throw new Error(`KP session error: ${kp_text}`);
+    throw new Error(`KP session error: ${kp_res.status} ${kp_text}`);
   }
 
   const kp_json = JSON.parse(kp_text);
@@ -106,27 +122,9 @@ export async function createKlarnaOrder(
   authorization_token: string,
   params: KlarnaOrderParams
 ) {
-  const { items, customer, vatRatePercent } = params;
+  const { items, customer } = params;
 
-  const taxRate = Math.round(vatRatePercent * 100);
-
-  const order_lines = items.map((i) => {
-    const unit_price = toCents(i.price);
-    const total_amount = unit_price * i.quantity;
-    const tax_amount =
-      total_amount - Math.round(total_amount / (1 + vatRatePercent / 100));
-
-    return {
-      type: 'physical',
-      reference: String(i.id),
-      name: i.name,
-      quantity: i.quantity,
-      unit_price,
-      total_amount,
-      total_tax_amount: tax_amount,
-      tax_rate: taxRate,
-    };
-  });
+  const order_lines = buildOrderLines(items);
 
   const order_amount = order_lines.reduce((s, l) => s + l.total_amount, 0);
   const order_tax_amount = order_lines.reduce(
@@ -137,6 +135,7 @@ export async function createKlarnaOrder(
   const order_body = {
     purchase_country: 'FI',
     purchase_currency: 'EUR',
+    locale: 'fi-FI',
     order_amount,
     order_tax_amount,
     order_lines,
@@ -165,7 +164,8 @@ export async function createKlarnaOrder(
 
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Create order error: ${text}`);
+    throw new Error(`Create order error: ${res.status} ${text}`);
   }
+
   return JSON.parse(text);
 }

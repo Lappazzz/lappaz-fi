@@ -21,6 +21,36 @@ const getAuthHeaders = (): HeadersInit | null => {
   return { Authorization: token };
 };
 
+/**
+ * Turvallinen JSON-parseri: loggaa virheet, palauttaa null jos jotain menee pieleen.
+ */
+async function parseJsonSafe<T>(res: Response): Promise<T | null> {
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text();
+
+  if (!res.ok) {
+    console.error('❌ Woo error:', res.status, text.slice(0, 500));
+    return null;
+  }
+
+  if (!contentType.includes('application/json')) {
+    console.error(
+      '❌ Woo returned non-JSON:',
+      res.status,
+      contentType,
+      text.slice(0, 500),
+    );
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    console.error('❌ JSON parse failed:', err, text.slice(0, 500));
+    return null;
+  }
+}
+
 // ---- SEARCH PRODUCTS ----
 export const searchProducts = async (query: string): Promise<WooProduct[]> => {
   const q = query.trim();
@@ -37,14 +67,8 @@ export const searchProducts = async (query: string): Promise<WooProduct[]> => {
       cache: 'no-store', // haun kannattaa olla tuore
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('❌ searchProducts error:', res.status, text);
-      return [];
-    }
-
-    const data: WooProduct[] = await res.json();
-    return data;
+    const data = await parseJsonSafe<WooProduct[]>(res);
+    return data ?? [];
   } catch (error) {
     console.error('❌ Error searching products:', error);
     return [];
@@ -62,28 +86,20 @@ export const getProducts = async (): Promise<WooProduct[]> => {
     const perPage = 100;
 
     while (true) {
-      const res = await fetch(
-        `${API_URL}/wp-json/wc/v3/products?per_page=${perPage}&page=${page}`,
-        {
-          headers,
-          next: { revalidate: 86400 },
-        }
-      );
+      const url = `${API_URL}/wp-json/wc/v3/products?per_page=${perPage}&page=${page}`;
+      console.log('Fetching products from:', url);
 
-      const contentType = res.headers.get('content-type') || '';
-      const text = await res.text();
+      const res = await fetch(url, {
+        headers,
+        next: { revalidate: 86400 },
+      });
 
-      if (!res.ok) {
-        console.error('Woo error status:', res.status, text.slice(0, 500));
-        throw new Error('Failed to fetch products');
+      const data = await parseJsonSafe<WooProduct[]>(res);
+      if (!data) {
+        // Jos joku sivu epäonnistuu, palautetaan mitä on ehditty hakea
+        return allProducts;
       }
 
-      if (!contentType.includes('application/json')) {
-        console.error('Woo returned non-JSON:', res.status, text.slice(0, 500));
-        throw new Error('Woo API did not return JSON');
-      }
-
-      const data: WooProduct[] = JSON.parse(text);
       allProducts = [...allProducts, ...data];
 
       if (data.length < perPage) break;
@@ -110,13 +126,9 @@ export async function getProductBySlug(slug: string): Promise<WooProduct | undef
       cache: 'no-store',
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`❌ getProductBySlug error for slug "${slug}":`, res.status, text);
-      return undefined;
-    }
+    const data = await parseJsonSafe<WooProduct[]>(res);
+    if (!data || data.length === 0) return undefined;
 
-    const data: WooProduct[] = await res.json();
     return data[0];
   } catch (error) {
     console.error('❌ getProductBySlug threw:', error);
@@ -136,13 +148,8 @@ export async function getProductVariations(productId: number): Promise<WooVariat
       next: { revalidate: 86400 },
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`❌ getProductVariations error for ${productId}:`, res.status, text);
-      return [];
-    }
-
-    return res.json();
+    const data = await parseJsonSafe<WooVariation[]>(res);
+    return data ?? [];
   } catch (error) {
     console.error('❌ getProductVariations threw:', error);
     return [];
@@ -163,13 +170,8 @@ export async function getVariationById(
       next: { revalidate: 86400 },
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(`❌ getVariationById error for ${variationId}:`, res.status, text);
-      return null;
-    }
-
-    return res.json();
+    const data = await parseJsonSafe<WooVariation>(res);
+    return data ?? null;
   } catch (error) {
     console.error('❌ getVariationById threw:', error);
     return null;
@@ -188,13 +190,8 @@ export const getPopularProducts = async (limit = 6): Promise<WooProduct[]> => {
       next: { revalidate: 86400 },
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('❌ getPopularProducts error:', res.status, text);
-      return [];
-    }
-
-    return res.json();
+    const data = await parseJsonSafe<WooProduct[]>(res);
+    return data ?? [];
   } catch (error) {
     console.error('❌ Error fetching popular products:', error);
     return [];

@@ -20,7 +20,7 @@ export default function OrderConfirmationPage() {
       {orderId && (
         <div className="mb-6 rounded-md border bg-green-50 px-4 py-3 text-sm text-green-800">
           <p>
-            <span className="font-semibold">Klarna-tilausnumero:</span>{' '}
+            <span className="font-semibold">Tilausnumero:</span>{' '}
             <span>{orderId}</span>
           </p>
         </div>

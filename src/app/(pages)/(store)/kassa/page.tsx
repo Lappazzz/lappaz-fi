@@ -87,19 +87,51 @@ export default function CheckoutDetailsPage() {
         <div className="mt-6">
           <h3 className="text-xl font-semibold mb-2">Maksu</h3>
 
-          <KlarnaWidget
-            payload={klarnaPayload}
-            disabled={!canUseKlarna} // 👈 nappi aina näkyvissä, joskus disabloitu
-            onSuccess={(oid) => {
-              setOrderId(oid);
-              setError(null);
-              clearCart();
-              router.push(
-                `/tilaus-vahvistus?orderId=${encodeURIComponent(oid)}`
-              );
-            }}
-            onError={(msg) => setError(msg)}
-          />
+<KlarnaWidget
+  payload={klarnaPayload}
+  disabled={!canUseKlarna}
+  onSuccess={async (klarnaOrderId) => {
+    try {
+      setError(null);
+
+      // 1) luo WooCommerce-tilaus backendin API:n kautta
+      const res = await fetch('/api/woocommerce/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: klarnaPayload.items,
+          customer: klarnaPayload.customer,
+          klarna_order_id: klarnaOrderId,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'WooCommerce order failed');
+      }
+
+      const wooOrder = await res.json();
+
+      // Woo order ID (numero) talteen
+      const wooOrderId = wooOrder.id as number;
+
+      setOrderId(klarnaOrderId);
+      clearCart();
+
+      // 2) redirect kiitossivulle – välitetään molemmat ID:t jos haluat
+      router.push(
+        `/tilaus-vahvistus?orderId=${encodeURIComponent(
+          String(wooOrderId)
+        )}&klarnaOrderId=${encodeURIComponent(klarnaOrderId)}`
+      );
+    } catch (e: any) {
+      console.error('❌ Checkout Woo error:', e);
+      setError(e?.message || 'Tilausta epäonnistui.');
+    }
+  }}
+  onError={(msg) => setError(msg)}
+/>
+
 
           {!canUseKlarna && (
             <div className="mt-2 text-sm text-gray-600">
@@ -108,11 +140,6 @@ export default function CheckoutDetailsPage() {
             </div>
           )}
 
-          {orderId && (
-            <div className="mt-4 p-3 rounded bg-green-100 text-green-800">
-              Tilaus vahvistettu. Klarna order ID: <strong>{orderId}</strong>
-            </div>
-          )}
 
           {error && (
             <div className="mt-4 p-3 rounded bg-red-100 text-red-800">
