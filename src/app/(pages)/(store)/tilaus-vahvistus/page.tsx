@@ -41,7 +41,7 @@ export default function OrderConfirmationPage() {
       {!orderId && !authorizationToken && (
         <div className="mb-6 rounded-md border bg-gray-50 px-4 py-3 text-sm text-gray-800">
           <p>
-            Emme löytäneet tilausnumeroa URL-parametreista, mutta mikäli maksu
+            Emme löytäneet tilausnumeroa, mutta mikäli maksu
             onnistui, saat erillisen vahvistusviestin sähköpostiisi.
           </p>
         </div>
@@ -49,8 +49,7 @@ export default function OrderConfirmationPage() {
 
       <section className="mt-6 space-y-2 text-gray-700 text-sm">
         <p>
-          Tilauksesi yhteenveto on lähetetty antamaasi sähköpostiosoitteeseen
-          (jos sellainen on annettu kassalla).
+          Tilauksesi yhteenveto on lähetetty antamaasi sähköpostiosoitteeseen.
         </p>
         <p>
           Jos jokin tuntuu oudolta tai et saanut vahvistussähköpostia, voit

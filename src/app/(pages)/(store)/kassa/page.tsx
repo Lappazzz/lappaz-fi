@@ -3,9 +3,12 @@ import { useState, useMemo } from 'react';
 import { useCart } from '@/_context/CartContext';
 import type { CartItem } from '@/types/woocommerce';
 import KlarnaWidget from '@/_components/KlarnaWidget';
+import { useRouter } from 'next/navigation';
 
 export default function CheckoutDetailsPage() {
   const { items, total, clearCart } = useCart();
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -25,7 +28,6 @@ export default function CheckoutDetailsPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Klarna available only when cart not empty and all fields filled
   const canUseKlarna = useMemo(
     () =>
       items.length > 0 &&
@@ -38,13 +40,12 @@ export default function CheckoutDetailsPage() {
     [items.length, formData]
   );
 
-  // Payload for Klarna session API
   const klarnaPayload = useMemo(
     () => ({
       items: items.map((item: CartItem) => ({
         id: item.id,
         name: item.name,
-        price: item.price,      // euros
+        price: item.price,
         quantity: item.quantity,
       })),
       customer: {
@@ -62,10 +63,8 @@ export default function CheckoutDetailsPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-      {/* Left: Delivery Details + Klarna */}
       <div>
         <h2 className="text-2xl font-bold mb-4">Toimitustiedot</h2>
-        {/* prevent default; Klarna handles payment */}
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           {['name','address','city','postal','email','phone'].map((field) => (
             <input
@@ -85,25 +84,28 @@ export default function CheckoutDetailsPage() {
           ))}
         </form>
 
-        {/* Klarna payment section */}
         <div className="mt-6">
           <h3 className="text-xl font-semibold mb-2">Maksu</h3>
 
-          {!canUseKlarna ? (
-            <div className="text-sm text-gray-600">
-              Täytä toimitustiedot ja varmista, että ostoskorissa on tuotteita,
-              niin Klarna-maksu tulee näkyviin.
+          <KlarnaWidget
+            payload={klarnaPayload}
+            disabled={!canUseKlarna} // 👈 nappi aina näkyvissä, joskus disabloitu
+            onSuccess={(oid) => {
+              setOrderId(oid);
+              setError(null);
+              clearCart();
+              router.push(
+                `/tilaus-vahvistus?orderId=${encodeURIComponent(oid)}`
+              );
+            }}
+            onError={(msg) => setError(msg)}
+          />
+
+          {!canUseKlarna && (
+            <div className="mt-2 text-sm text-gray-600">
+              Täytä kaikki toimitustiedot ja varmista, että ostoskorissa on
+              tuotteita, jotta voit maksaa Klarnalla.
             </div>
-          ) : (
-            <KlarnaWidget
-              payload={klarnaPayload}
-              onSuccess={(oid) => {
-                setOrderId(oid);
-                setError(null);
-                clearCart();
-              }}
-              onError={(msg) => setError(msg)}
-            />
           )}
 
           {orderId && (
@@ -120,7 +122,7 @@ export default function CheckoutDetailsPage() {
         </div>
       </div>
 
-      {/* Right: Order Summary */}
+      {/* Right Order Summary */}
       <div className="border rounded-md p-4 bg-gray-50">
         <h2 className="text-2xl font-bold mb-4">Tilauksen yhteenveto</h2>
         <ul className="space-y-4 mb-4">

@@ -1,34 +1,61 @@
 import type { WooProduct, WooVariation } from '@/types/woocommerce';
 
-const authHeader = (): string => {
-  const user = process.env.WC_CONSUMER_KEY!;
-  const pass = process.env.WC_CONSUMER_SECRET!;
-  return 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64');
+const API_URL = process.env.WC_STORE_URL || '';
+const WC_KEY = process.env.WC_CONSUMER_KEY || '';
+const WC_SECRET = process.env.WC_CONSUMER_SECRET || '';
+
+/**
+ * Palauttaa valmiit Authorization-headerit, tai null jos konffit puuttuu.
+ */
+const getAuthHeaders = (): HeadersInit | null => {
+  if (!API_URL) {
+    console.error('❌ WC_STORE_URL is not set');
+    return null;
+  }
+  if (!WC_KEY || !WC_SECRET) {
+    console.error('❌ WooCommerce credentials missing: WC_CONSUMER_KEY / WC_CONSUMER_SECRET');
+    return null;
+  }
+
+  const token = 'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');
+  return { Authorization: token };
 };
 
-const API_URL = process.env.WC_STORE_URL;
-
-// Search products by query
+// ---- SEARCH PRODUCTS ----
 export const searchProducts = async (query: string): Promise<WooProduct[]> => {
-  if (!query.trim()) return [];
-  try {
-    const res = await fetch(
-      `${API_URL}/wp-json/wc/v3/products?search=${encodeURIComponent(query)}&per_page=10`,
-      {
-        headers: { Authorization: authHeader() },
-        next: { revalidate: 86400 },
-      }
-    );
+  const q = query.trim();
+  if (!q) return [];
 
-    if (!res.ok) throw new Error('Failed to fetch products');
-    return res.json();
+  const headers = getAuthHeaders();
+  if (!headers) return [];
+
+  try {
+    const url = `${API_URL}/wp-json/wc/v3/products?search=${encodeURIComponent(q)}&per_page=10`;
+
+    const res = await fetch(url, {
+      headers,
+      cache: 'no-store', // haun kannattaa olla tuore
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('❌ searchProducts error:', res.status, text);
+      return [];
+    }
+
+    const data: WooProduct[] = await res.json();
+    return data;
   } catch (error) {
-    console.error('Error searching products:', error);
+    console.error('❌ Error searching products:', error);
     return [];
   }
 };
 
+// ---- LIST PRODUCTS (PAGINATED) ----
 export const getProducts = async (): Promise<WooProduct[]> => {
+  const headers = getAuthHeaders();
+  if (!headers) return [];
+
   try {
     let allProducts: WooProduct[] = [];
     let page = 1;
@@ -38,14 +65,25 @@ export const getProducts = async (): Promise<WooProduct[]> => {
       const res = await fetch(
         `${API_URL}/wp-json/wc/v3/products?per_page=${perPage}&page=${page}`,
         {
-          headers: { Authorization: authHeader() },
+          headers,
           next: { revalidate: 86400 },
         }
       );
 
-      if (!res.ok) throw new Error('Failed to fetch products');
+      const contentType = res.headers.get('content-type') || '';
+      const text = await res.text();
 
-      const data: WooProduct[] = await res.json();
+      if (!res.ok) {
+        console.error('Woo error status:', res.status, text.slice(0, 500));
+        throw new Error('Failed to fetch products');
+      }
+
+      if (!contentType.includes('application/json')) {
+        console.error('Woo returned non-JSON:', res.status, text.slice(0, 500));
+        throw new Error('Woo API did not return JSON');
+      }
+
+      const data: WooProduct[] = JSON.parse(text);
       allProducts = [...allProducts, ...data];
 
       if (data.length < perPage) break;
@@ -59,59 +97,106 @@ export const getProducts = async (): Promise<WooProduct[]> => {
   }
 };
 
+// ---- SINGLE PRODUCT BY SLUG ----
 export async function getProductBySlug(slug: string): Promise<WooProduct | undefined> {
-  const res = await fetch(`${API_URL}/wp-json/wc/v3/products?slug=${slug}`, {
-    headers: { Authorization: authHeader() },
-    next: { revalidate: 86400 },
-  });
+  const headers = getAuthHeaders();
+  if (!headers) return undefined;
 
-  if (!res.ok) throw new Error(`Failed to fetch product by slug: ${slug}`);
+  try {
+    const url = `${API_URL}/wp-json/wc/v3/products?slug=${encodeURIComponent(slug)}`;
 
-  const data: WooProduct[] = await res.json();
-  return data[0];
+    const res = await fetch(url, {
+      headers,
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`❌ getProductBySlug error for slug "${slug}":`, res.status, text);
+      return undefined;
+    }
+
+    const data: WooProduct[] = await res.json();
+    return data[0];
+  } catch (error) {
+    console.error('❌ getProductBySlug threw:', error);
+    return undefined;
+  }
 }
 
-
+// ---- VARIATIONS ----
 export async function getProductVariations(productId: number): Promise<WooVariation[]> {
-  const res = await fetch(
-    `${API_URL}/wp-json/wc/v3/products/${productId}/variations?per_page=100`,
-    {
-      headers: { Authorization: authHeader() },
-      next: { revalidate: 86400 },
-    }
-  );
+  const headers = getAuthHeaders();
+  if (!headers) return [];
 
-  if (!res.ok) throw new Error('Failed to fetch variations');
-  return res.json();
+  try {
+    const url = `${API_URL}/wp-json/wc/v3/products/${productId}/variations?per_page=100`;
+    const res = await fetch(url, {
+      headers,
+      next: { revalidate: 86400 },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`❌ getProductVariations error for ${productId}:`, res.status, text);
+      return [];
+    }
+
+    return res.json();
+  } catch (error) {
+    console.error('❌ getProductVariations threw:', error);
+    return [];
+  }
 }
 
-export async function getVariationById(productId: number, variationId: number): Promise<WooVariation> {
-  const res = await fetch(
-    `${API_URL}/wp-json/wc/v3/products/${productId}/variations/${variationId}`,
-    {
-      headers: { Authorization: authHeader() },
-      next: { revalidate: 86400 },
-    }
-  );
+export async function getVariationById(
+  productId: number,
+  variationId: number,
+): Promise<WooVariation | null> {
+  const headers = getAuthHeaders();
+  if (!headers) return null;
 
-  if (!res.ok) throw new Error(`Failed to fetch variation ${variationId}`);
-  return res.json();
+  try {
+    const url = `${API_URL}/wp-json/wc/v3/products/${productId}/variations/${variationId}`;
+    const res = await fetch(url, {
+      headers,
+      next: { revalidate: 86400 },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`❌ getVariationById error for ${variationId}:`, res.status, text);
+      return null;
+    }
+
+    return res.json();
+  } catch (error) {
+    console.error('❌ getVariationById threw:', error);
+    return null;
+  }
 }
 
 export const getPopularProducts = async (limit = 6): Promise<WooProduct[]> => {
-  try {
-    const res = await fetch(
-      `${API_URL}/wp-json/wc/v3/products?per_page=${limit}&orderby=popularity&order=desc`,
-      {
-        headers: { Authorization: authHeader() },
-        next: { revalidate: 86400 },
-      }
-    );
+  const headers = getAuthHeaders();
+  if (!headers) return [];
 
-    if (!res.ok) throw new Error('Failed to fetch popular products');
+  try {
+    const url = `${API_URL}/wp-json/wc/v3/products?per_page=${limit}&orderby=popularity&order=desc`;
+
+    const res = await fetch(url, {
+      headers,
+      next: { revalidate: 86400 },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('❌ getPopularProducts error:', res.status, text);
+      return [];
+    }
+
     return res.json();
   } catch (error) {
-    console.error('Error fetching popular products:', error);
+    console.error('❌ Error fetching popular products:', error);
     return [];
   }
 };
