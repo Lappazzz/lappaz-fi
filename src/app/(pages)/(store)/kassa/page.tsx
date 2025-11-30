@@ -18,7 +18,7 @@ export default function CheckoutDetailsPage() {
     phone: '',
   });
 
-  const [orderId, setOrderId] = useState<string | null>(null);
+  // orderId poistettu, ei enää käytössä
   const [error, setError] = useState<string | null>(null);
 
   const VAT_RATE = 25.5;
@@ -56,7 +56,6 @@ export default function CheckoutDetailsPage() {
         email: formData.email,
         phone: formData.phone,
       },
-      vatRatePercent: VAT_RATE,
     }),
     [items, formData]
   );
@@ -66,72 +65,78 @@ export default function CheckoutDetailsPage() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Toimitustiedot</h2>
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-          {['name','address','city','postal','email','phone'].map((field) => (
-            <input
-              key={field}
-              name={field}
-              value={formData[field as keyof typeof formData]}
-              onChange={handleInputChange}
-              placeholder={
-                field === 'postal'
-                  ? 'Postinumero'
-                  : field.charAt(0).toUpperCase() + field.slice(1)
-              }
-              type={field === 'email' ? 'email' : 'text'}
-              className="w-full border px-3 py-2 rounded-md"
-              required
-            />
-          ))}
+          {['name', 'address', 'city', 'postal', 'email', 'phone'].map(
+            (field) => (
+              <input
+                key={field}
+                name={field}
+                value={formData[field as keyof typeof formData]}
+                onChange={handleInputChange}
+                placeholder={
+                  field === 'postal'
+                    ? 'Postinumero'
+                    : field.charAt(0).toUpperCase() + field.slice(1)
+                }
+                type={field === 'email' ? 'email' : 'text'}
+                className="w-full border px-3 py-2 rounded-md"
+                required
+              />
+            )
+          )}
         </form>
 
         <div className="mt-6">
           <h3 className="text-xl font-semibold mb-2">Maksu</h3>
 
-<KlarnaWidget
-  payload={klarnaPayload}
-  disabled={!canUseKlarna}
-  onSuccess={async (klarnaOrderId) => {
-    try {
-      setError(null);
+          <KlarnaWidget
+            payload={klarnaPayload}
+            disabled={!canUseKlarna}
+            onSuccess={async (klarnaOrderId) => {
+              try {
+                setError(null);
 
-      // 1) luo WooCommerce-tilaus backendin API:n kautta
-      const res = await fetch('/api/woocommerce/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: klarnaPayload.items,
-          customer: klarnaPayload.customer,
-          klarna_order_id: klarnaOrderId,
-        }),
-      });
+                // 1) luo WooCommerce-tilaus backendin API:n kautta
+                const res = await fetch('/api/woocommerce/order', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    items: klarnaPayload.items,
+                    customer: klarnaPayload.customer,
+                    klarna_order_id: klarnaOrderId,
+                  }),
+                });
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'WooCommerce order failed');
-      }
+                if (!res.ok) {
+                  const errJson = (await res.json().catch(() => ({}))) as {
+                    error?: string;
+                  };
+                  throw new Error(
+                    errJson.error || 'WooCommerce order failed'
+                  );
+                }
 
-      const wooOrder = await res.json();
+                const wooOrder: { id: number } = await res.json();
 
-      // Woo order ID (numero) talteen
-      const wooOrderId = wooOrder.id as number;
+                const wooOrderId = wooOrder.id;
 
-      setOrderId(klarnaOrderId);
-      clearCart();
+                clearCart();
 
-      // 2) redirect kiitossivulle – välitetään molemmat ID:t jos haluat
-      router.push(
-        `/tilaus-vahvistus?orderId=${encodeURIComponent(
-          String(wooOrderId)
-        )}&klarnaOrderId=${encodeURIComponent(klarnaOrderId)}`
-      );
-    } catch (e: any) {
-      console.error('❌ Checkout Woo error:', e);
-      setError(e?.message || 'Tilausta epäonnistui.');
-    }
-  }}
-  onError={(msg) => setError(msg)}
-/>
-
+                router.push(
+                  `/tilaus-vahvistus?orderId=${encodeURIComponent(
+                    String(wooOrderId)
+                  )}&klarnaOrderId=${encodeURIComponent(klarnaOrderId)}`
+                );
+              } catch (e: unknown) {
+                console.error('❌ Checkout Woo error:', e);
+                const message =
+                  e instanceof Error
+                    ? e.message
+                    : 'Tilausta ei voitu tallentaa kauppaan.';
+                setError(message);
+              }
+            }}
+            onError={(msg) => setError(msg)}
+          />
 
           {!canUseKlarna && (
             <div className="mt-2 text-sm text-gray-600">
@@ -139,7 +144,6 @@ export default function CheckoutDetailsPage() {
               tuotteita, jotta voit maksaa Klarnalla.
             </div>
           )}
-
 
           {error && (
             <div className="mt-4 p-3 rounded bg-red-100 text-red-800">

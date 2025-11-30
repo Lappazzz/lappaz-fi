@@ -48,14 +48,14 @@ type KlarnaCustomerPayload = {
 type KlarnaPayload = {
   items: KlarnaCartItemPayload[];
   customer: KlarnaCustomerPayload;
-  vatRatePercent: number;
+  // vatRatePercent poistettu – ALV 25,5 % kovakoodattu backendissä
 };
 
 type KlarnaWidgetProps = {
   payload: KlarnaPayload;
   onSuccess: (orderId: string) => void;
   onError: (msg: string) => void;
-  disabled?: boolean; // 👈 uusi
+  disabled?: boolean;
 };
 
 type KlarnaSessionResponse = {
@@ -73,7 +73,7 @@ export default function KlarnaWidget({
   payload,
   onSuccess,
   onError,
-  disabled = false, // 👈 default
+  disabled = false,
 }: KlarnaWidgetProps) {
   const [clientToken, setClientToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -153,7 +153,7 @@ export default function KlarnaWidget({
   }, [clientToken, onError]);
 
   const handlePay = async () => {
-    if (disabled) return; // 👈 ei tehdä mitään jos disabloitu
+    if (disabled) return;
 
     if (typeof window === 'undefined' || !window.Klarna) {
       onError('Klarna ei ole valmis');
@@ -186,7 +186,7 @@ export default function KlarnaWidget({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           authorization_token: authRes.authorization_token,
-          ...payload,
+          ...payload, // sisältää nyt vain items + customer
         }),
       });
 
@@ -217,7 +217,7 @@ export default function KlarnaWidget({
       <button
         type="button"
         onClick={handlePay}
-        disabled={loading || !clientToken || disabled} // 👈 disablointi
+        disabled={loading || !clientToken || disabled}
         className="w-full px-4 py-2 bg-black text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Käsitellään maksua...' : 'Maksa Klarnalla'}

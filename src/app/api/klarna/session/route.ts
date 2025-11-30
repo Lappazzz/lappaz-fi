@@ -20,18 +20,16 @@ type KlarnaCustomer = {
 type KlarnaSessionRequestBody = {
   items: KlarnaCartItem[];
   customer: KlarnaCustomer;
-  vatRatePercent: number;
 };
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as KlarnaSessionRequestBody;
-    const { items, customer, vatRatePercent } = body;
+    const { items, customer } = body;
 
     const result = await createKpSession({
       items,
       customer,
-      vatRatePercent,
     });
 
     return NextResponse.json(result);

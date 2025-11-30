@@ -13,22 +13,29 @@ export type WooOrderCreateInput = {
   klarna_order_id: string;
 };
 
-export async function createWooOrder(input: WooOrderCreateInput) {
+type WooOrderResponse = {
+  id: number;
+  [key: string]: unknown;
+};
+
+export async function createWooOrder(
+  input: WooOrderCreateInput
+): Promise<WooOrderResponse> {
   const { items, customer, klarna_order_id } = input;
 
   const line_items = items.map((i) => ({
-    product_id: Number(i.id),     // olettaen että id = Woo product_id
+    product_id: Number(i.id), // olettaen että id = Woo product_id
     quantity: i.quantity,
-    total: i.price.toFixed(2),    // bruttosumma per rivi, Woo laskee verot itse
+    total: i.price.toFixed(2), // bruttosumma per rivi, Woo laskee verot itse
   }));
 
-  const body: any = {
-    payment_method: 'klarna',          // Woo gateway ID, säädä jos eri
+  const body = {
+    payment_method: 'klarna', // Woo gateway ID, säädä jos eri
     payment_method_title: 'Klarna',
-    set_paid: true,                    // maksu jo hyväksytty Klarnassa
+    set_paid: true, // maksu jo hyväksytty Klarnassa
 
     billing: {
-      first_name: customer.name,       // halutessa voi splitata etu/suku
+      first_name: customer.name, // halutessa voi splitata etu/suku
       last_name: '',
       address_1: customer.address,
       address_2: '',
@@ -72,5 +79,5 @@ export async function createWooOrder(input: WooOrderCreateInput) {
     throw new Error(`Woo order create failed: ${res.status} ${text}`);
   }
 
-  return JSON.parse(text);
+  return JSON.parse(text) as WooOrderResponse;
 }

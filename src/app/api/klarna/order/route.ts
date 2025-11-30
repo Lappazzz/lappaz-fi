@@ -21,18 +21,17 @@ type KlarnaOrderRequestBody = {
   authorization_token: string;
   items: KlarnaCartItem[];
   customer: KlarnaCustomer;
-  vatRatePercent: number;
+  // vatRatePercent poistettu, koska backend käyttää aina 25.5 %
 };
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as KlarnaOrderRequestBody;
-    const { authorization_token, items, customer, vatRatePercent } = body;
+    const { authorization_token, items, customer } = body;
 
     const order = await createKlarnaOrder(authorization_token, {
       items,
       customer,
-      vatRatePercent,
     });
 
     return NextResponse.json(order);
