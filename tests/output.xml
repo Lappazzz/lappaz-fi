@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 6.0.2 (Python 3.11.9 on win32)" generated="20251130 10:31:19.476" rpa="false" schemaversion="3">
+<suite id="s1" name="Frontend" source="F:\Jamk Opinnäytetyö\Lappazfi\lappaz\tests\frontend.robot">
+<test id="s1-t1" name="Landing page shows categories and most sold products" line="10">
+<kw name="Open Browser" library="SeleniumLibrary">
+<arg>${URL}</arg>
+<arg>Chrome</arg>
+<arg>executable_path=${CHROMEDRIVER}</arg>
+<doc>Opens a new browser instance to the optional ``url``.</doc>
+<msg timestamp="20251130 10:31:19.660" level="INFO">Opening browser 'Chrome' to base url 'http://37.27.214.114:3000'.</msg>
+<status status="PASS" starttime="20251130 10:31:19.660" endtime="20251130 10:31:21.043"/>
+</kw>
+<kw name="Maximize Browser Window" library="SeleniumLibrary">
+<doc>Maximizes current browser window.</doc>
+<status status="PASS" starttime="20251130 10:31:21.043" endtime="20251130 10:31:21.083"/>
+</kw>
+<kw name="Title Should Be" library="SeleniumLibrary">
+<arg>Lappaz.fi | 3D-tulostukset</arg>
+<doc>Verifies that the current page title equals ``title``.</doc>
+<msg timestamp="20251130 10:31:21.088" level="INFO">Page title is 'Lappaz.fi | 3D-tulostukset'.</msg>
+<status status="PASS" starttime="20251130 10:31:21.083" endtime="20251130 10:31:21.088"/>
+</kw>
+<kw name="Element Should Be Visible" library="SeleniumLibrary">
+<arg>css=header a[href="/"]</arg>
+<doc>Verifies that the element identified by ``locator`` is visible.</doc>
+<msg timestamp="20251130 10:31:21.193" level="INFO">Element 'css=header a[href="/"]' is displayed.</msg>
+<status status="PASS" starttime="20251130 10:31:21.089" endtime="20251130 10:31:21.193"/>
+</kw>
+<kw name="Element Text Should Be" library="SeleniumLibrary">
+<arg>xpath=//section[.//h2[contains(@class,"text-2xl")]][1]/h2</arg>
+<arg>Tuotekategoriat</arg>
+<doc>Verifies that element ``locator`` contains exact the text ``expected``.</doc>
+<msg timestamp="20251130 10:31:21.194" level="INFO">Verifying element 'xpath=//section[.//h2[contains(@class,"text-2xl")]][1]/h2' contains exact text 'Tuotekategoriat'.</msg>
+<status status="PASS" starttime="20251130 10:31:21.194" endtime="20251130 10:31:21.211"/>
+</kw>
+<kw name="Element Should Be Visible" library="SeleniumLibrary">
+<arg>css=img[alt="Autotarvikkeet"]</arg>
+<doc>Verifies that the element identified by ``locator`` is visible.</doc>
+<msg timestamp="20251130 10:31:21.228" level="INFO">Element 'css=img[alt="Autotarvikkeet"]' is displayed.</msg>
+<status status="PASS" starttime="20251130 10:31:21.212" endtime="20251130 10:31:21.228"/>
+</kw>
+<kw name="Element Text Should Be" library="SeleniumLibrary">
+<arg>xpath=//section[.//h2[text()="Tuotekategoriat"]]//button</arg>
+<arg>Näytä tuotteet</arg>
+<doc>Verifies that element ``locator`` contains exact the text ``expected``.</doc>
+<msg timestamp="20251130 10:31:21.228" level="INFO">Verifying element 'xpath=//section[.//h2[text()="Tuotekategoriat"]]//button' contains exact text 'Näytä tuotteet'.</msg>
+<status status="PASS" starttime="20251130 10:31:21.228" endtime="20251130 10:31:21.241"/>
+</kw>
+<kw name="Element Text Should Be" library="SeleniumLibrary">
+<arg>xpath=//section[.//h2[contains(@class,"text-2xl")]][2]/h2</arg>
+<arg>Myydyimmät</arg>
+<doc>Verifies that element ``locator`` contains exact the text ``expected``.</doc>
+<msg timestamp="20251130 10:31:21.242" level="INFO">Verifying element 'xpath=//section[.//h2[contains(@class,"text-2xl")]][2]/h2' contains exact text 'Myydyimmät'.</msg>
+<status status="PASS" starttime="20251130 10:31:21.242" endtime="20251130 10:31:21.254"/>
+</kw>
+<kw name="Element Should Be Visible" library="SeleniumLibrary">
+<arg>xpath=//h2[text()="Toyota MR2 SW20 pyyhkijän suoja"]</arg>
+<doc>Verifies that the element identified by ``locator`` is visible.</doc>
+<msg timestamp="20251130 10:31:21.267" level="INFO">Element 'xpath=//h2[text()="Toyota MR2 SW20 pyyhkijän suoja"]' is displayed.</msg>
+<status status="PASS" starttime="20251130 10:31:21.254" endtime="20251130 10:31:21.267"/>
+</kw>
+<kw name="Element Should Be Visible" library="SeleniumLibrary">
+<arg>css=footer a[href="/toimitus-ja-palautusehdot"]</arg>
+<doc>Verifies that the element identified by ``locator`` is visible.</doc>
+<msg timestamp="20251130 10:31:21.281" level="INFO">Element 'css=footer a[href="/toimitus-ja-palautusehdot"]' is displayed.</msg>
+<status status="PASS" starttime="20251130 10:31:21.268" endtime="20251130 10:31:21.281"/>
+</kw>
+<kw name="Close Browser" library="SeleniumLibrary">
+<doc>Closes the current browser.</doc>
+<status status="PASS" starttime="20251130 10:31:21.281" endtime="20251130 10:31:23.413"/>
+</kw>
+<doc>Verifies that the landing page loads and key elements are visible:
+- Correct title
+- Category section (Tuotekategoriat + hero image)
+- Most sold products section (Myydyimmät + at least one product)</doc>
+<status status="PASS" starttime="20251130 10:31:19.659" endtime="20251130 10:31:23.413"/>
+</test>
+<status status="PASS" starttime="20251130 10:31:19.477" endtime="20251130 10:31:23.416"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat pass="1" fail="0" skip="0" id="s1" name="Frontend">Frontend</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

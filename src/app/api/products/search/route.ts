@@ -1,9 +1,9 @@
 // src/app/api/products/search/route.ts
 import { NextResponse } from 'next/server';
 
-const API_URL = process.env.NEXT_PUBLIC_WC_STORE_URL!;
-const WC_KEY = process.env.WC_CONSUMER_KEY || process.env.NEXT_PUBLIC_WC_CONSUMER_KEY!;
-const WC_SECRET = process.env.WC_CONSUMER_SECRET || process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET!;
+const API_URL = process.env.WC_STORE_URL!;
+const WC_KEY = process.env.WC_CONSUMER_KEY || process.env.WC_CONSUMER_KEY!;
+const WC_SECRET = process.env.WC_CONSUMER_SECRET || process.env.WC_CONSUMER_SECRET!;
 
 const authHeader = () =>
   'Basic ' + Buffer.from(`${WC_KEY}:${WC_SECRET}`).toString('base64');

@@ -36,6 +36,7 @@ export default async function SubCategoryPage({ params }: Props) {
                 width={400}
                 height={400}
                 className="w-full h-full object-cover rounded-md mb-4"
+                unoptimized 
               />
               <h2 className="text-xl font-semibold text-center">{product.name}</h2>
               <p className="text-lg text-gray-700">{product.price} €</p>

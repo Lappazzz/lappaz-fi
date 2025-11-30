@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'lappaz.fi',
+      },
+      {
+        protocol: 'https',
         hostname: 'www.lappaz.fi',
       },
     ],
