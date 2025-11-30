@@ -22,8 +22,11 @@ export type KlarnaOrderParams = {
 const KLARNA_KEY = process.env.KLARNA_KEY!;
 const KLARNA_SECRET = process.env.KLARNA_SECRET!;
 
+// KLARNA_ENV: 'playground' | 'production'
+const KLARNA_ENV = process.env.KLARNA_ENV ?? 'playground';
+
 const KLARNA_BASE =
-  process.env.NODE_ENV === 'production'
+  KLARNA_ENV === 'production'
     ? 'https://api.klarna.com'
     : 'https://api.playground.klarna.com';
 
