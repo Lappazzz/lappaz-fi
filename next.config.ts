@@ -4,12 +4,14 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'beta.lappaz.fi',
+        protocol: "https",
+        hostname: "beta.lappaz.fi",
+        pathname: "/wp-content/uploads/**",
       },
       {
-        protocol: 'https',
-        hostname: 'beta.lappaz.fi',
+        protocol: "https",
+        hostname: "wp.lappaz.fi",
+        pathname: "/wp-content/uploads/**",
       },
     ],
   },

@@ -33,47 +33,72 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
   return (
     <div
       className={`fixed top-0 right-0 w-3/5 h-full bg-neutral-800 p-6 flex flex-col items-start space-y-4 shadow-lg transform transition-all duration-300 ease-in-out lg:hidden
-        ${menuOpen ? "translate-x-0 opacity-100 visible" : "translate-x-full opacity-0 invisible"}`}
+        ${
+          menuOpen
+            ? "translate-x-0 opacity-100 visible"
+            : "translate-x-full opacity-0 invisible"
+        }`}
     >
       <button
         className="text-white text-2xl self-end mb-4"
         onClick={() => setMenuOpen(false)}
+        aria-label="Sulje valikko"
       >
-        <FaChevronDown />
+        {/* voidaan pitää ChevronDown, mutta tämä olisi selkeämpi X:lläkin */}
+        <FaChevronDown className="rotate-180" />
       </button>
 
-      {navLinks.map(({ label, subLinks }) => (
-        <div key={label} className="w-full">
-          <button
-            onClick={() => toggleDropdown(label)}
-            className="text-lg font-bold w-full text-left text-white hover:text-blue-400 transition flex items-center"
-          >
-            {label}
-            {subLinks && (
+      {navLinks.map(({ label, href, subLinks }) => {
+        const isOpen = !!openDropdowns[label];
+
+        // jos ei sublinkkejä → suora linkki
+        if (!subLinks || subLinks.length === 0) {
+          return (
+            <div key={label} className="w-full">
+              <Link
+                href={href || "#"}
+                className="text-lg font-bold block text-white hover:text-blue-400 transition"
+                onClick={() => setMenuOpen(false)}
+              >
+                {label}
+              </Link>
+            </div>
+          );
+        }
+
+        // jos on sublinkkejä → dropdown
+        return (
+          <div key={label} className="w-full">
+            <button
+              type="button"
+              onClick={() => toggleDropdown(label)}
+              className="text-lg font-bold w-full text-left text-white hover:text-blue-400 transition flex items-center justify-between"
+            >
+              <span>{label}</span>
               <FaChevronDown
                 className={`ml-2 text-sm transform ${
-                  openDropdowns[label] ? "rotate-180" : "rotate-0"
+                  isOpen ? "rotate-180" : "rotate-0"
                 } transition-transform`}
               />
-            )}
-          </button>
+            </button>
 
-          {subLinks && openDropdowns[label] && (
-            <div className="pl-4 mt-2 space-y-2">
-              {subLinks.map(({ href: linkHref, label: subLabel }) => (
-                <Link
-                  key={subLabel}
-                  href={linkHref}
-                  className="block text-white hover:text-blue-400"
-                  onClick={() => setTimeout(() => setMenuOpen(false), 0)}
-                >
-                  {subLabel}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+            {isOpen && (
+              <div className="pl-4 mt-2 space-y-2">
+                {subLinks.map(({ href: linkHref, label: subLabel }) => (
+                  <Link
+                    key={subLabel}
+                    href={linkHref}
+                    className="block text-white hover:text-blue-400"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {subLabel}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
