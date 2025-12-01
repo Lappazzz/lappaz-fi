@@ -22,7 +22,7 @@ const getAuthHeaders = (): HeadersInit | null => {
 };
 
 /**
- * Turvallinen JSON-parseri: loggaa virheet, palauttaa null jos jotain menee pieleen.
+ * JSON-parseri: loggaa virheet, palauttaa null jos jotain menee pieleen.
  */
 async function parseJsonSafe<T>(res: Response): Promise<T | null> {
   const contentType = res.headers.get('content-type') || '';
@@ -64,7 +64,7 @@ export const searchProducts = async (query: string): Promise<WooProduct[]> => {
 
     const res = await fetch(url, {
       headers,
-      cache: 'no-store', // haun kannattaa olla tuore
+      next: { revalidate: 86400 },
     });
 
     const data = await parseJsonSafe<WooProduct[]>(res);
@@ -178,6 +178,7 @@ export async function getVariationById(
   }
 }
 
+// ---- GetPopularProducts ----
 export const getPopularProducts = async (limit = 6): Promise<WooProduct[]> => {
   const headers = getAuthHeaders();
   if (!headers) return [];

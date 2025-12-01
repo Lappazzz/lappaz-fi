@@ -24,18 +24,18 @@ export async function createWooOrder(
   const { items, customer, klarna_order_id } = input;
 
   const line_items = items.map((i) => ({
-    product_id: Number(i.id), // olettaen että id = Woo product_id
+    product_id: Number(i.id),
     quantity: i.quantity,
-    total: i.price.toFixed(2), // bruttosumma per rivi, Woo laskee verot itse
+    total: i.price.toFixed(2),
   }));
 
   const body = {
-    payment_method: 'klarna', // Woo gateway ID, säädä jos eri
+    payment_method: 'klarna',
     payment_method_title: 'Klarna',
-    set_paid: true, // maksu jo hyväksytty Klarnassa
+    set_paid: true,
 
     billing: {
-      first_name: customer.name, // halutessa voi splitata etu/suku
+      first_name: customer.name,
       last_name: '',
       address_1: customer.address,
       address_2: '',
