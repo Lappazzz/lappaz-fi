@@ -32,7 +32,7 @@ export default function Carousel({ categories }: CarouselProps) {
   }, [nextSlide]);
 
   const activeCategory = categories[index];
-  const isFirst = index === 0; // vain ensimmäinen näkyvä kuva on LCP
+  const isFirst = index === 0;
 
   return (
     <div className="relative w-full h-96 rounded-lg overflow-hidden">
@@ -42,12 +42,11 @@ export default function Carousel({ categories }: CarouselProps) {
         alt={activeCategory.name}
         fill
         className="rounded-lg object-cover"
-        sizes="100vw"
+        // Mobiilissa 100vw, muuten noin 721px leveys (Lighthousein mukaan)
+        sizes="(max-width: 768px) 100vw, 721px"
         priority={isFirst}
         fetchPriority={isFirst ? 'high' : 'auto'}
         loading={isFirst ? 'eager' : 'lazy'}
-        // tärkeä LCP-tweak: ohita Nextin on-the-fly optimointi tälle hero-kuvalle
-        unoptimized
       />
 
       <div className="absolute inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center text-white text-center px-4">
