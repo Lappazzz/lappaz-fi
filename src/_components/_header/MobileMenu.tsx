@@ -44,7 +44,6 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
         onClick={() => setMenuOpen(false)}
         aria-label="Sulje valikko"
       >
-        {/* voidaan pitää ChevronDown, mutta tämä olisi selkeämpi X:lläkin */}
         <FaChevronDown className="rotate-180" />
       </button>
 

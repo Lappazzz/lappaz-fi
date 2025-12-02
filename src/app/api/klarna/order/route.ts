@@ -21,7 +21,6 @@ type KlarnaOrderRequestBody = {
   authorization_token: string;
   items: KlarnaCartItem[];
   customer: KlarnaCustomer;
-  // vatRatePercent poistettu, koska backend käyttää aina 25.5 %
 };
 
 export async function POST(req: Request) {

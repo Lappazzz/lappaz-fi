@@ -4,7 +4,6 @@ import { getProductBySlug, getProductVariations } from '@/lib/api/api';
 import ProductDetailsClient from '@/_components/ProductDetailsClient';
 import type { WooVariation } from '@/types/woocommerce';
 
-// Infer prop types from ProductDetailsClient so we stay in sync
 type ProductDetailsProps = ComponentProps<typeof ProductDetailsClient>;
 type ProductDetailsProduct = ProductDetailsProps['product'];
 type ProductDetailsVariations = NonNullable<ProductDetailsProps['variations']>;
@@ -16,7 +15,7 @@ export default async function ProductPage({
 }) {
   const { slug } = await params;
 
-  const product = await getProductBySlug(slug); // WooProduct | undefined
+  const product = await getProductBySlug(slug);
   if (!product) {
     notFound();
   }
@@ -26,8 +25,7 @@ export default async function ProductPage({
     wooVariations = await getProductVariations(product.id);
   }
 
-  // Normalize product.price -> string | undefined
-  // Normalize attributes.options -> string[] (no undefined)
+
   const normalizedProduct: ProductDetailsProduct = {
     ...product,
     price:
@@ -37,11 +35,10 @@ export default async function ProductPage({
     attributes: product.attributes?.map((attr) => ({
       name: attr.name,
       variation: Boolean(attr.variation),
-      options: attr.options ?? [], // ensure string[]
+      options: attr.options ?? [],
     })),
   };
 
-  // Normalize variations price -> string
   const normalizedVariations: ProductDetailsVariations = wooVariations.map(
     (v) => ({
       ...v,

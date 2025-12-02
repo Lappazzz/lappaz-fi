@@ -10,7 +10,6 @@ interface Props {
 export default async function MainCategoryPage({ params }: Props) {
   const { mainCategory } = await params;
 
-  // Call getProducts without arguments
   const allProducts: WooProduct[] = await getProducts();
 
   const filtered: WooProduct[] =

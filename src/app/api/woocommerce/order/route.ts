@@ -1,4 +1,3 @@
-// src/app/api/woocommerce/order/route.ts
 import { NextResponse } from 'next/server';
 import { createWooOrder } from '@/lib/api/wooOrders';
 import type { KlarnaCartItem, KlarnaCustomer } from '@/lib/api/klarna';

@@ -42,7 +42,7 @@ export default function Carousel({ categories }: CarouselProps) {
         alt={activeCategory.name}
         fill
         className="rounded-lg object-cover"
-        // Mobiilissa 100vw, muuten noin 721px leveys (Lighthousein mukaan)
+        // Mobiilissa 100vw, muuten noin 721px leveys
         sizes="(max-width: 768px) 100vw, 721px"
         priority={isFirst}
         fetchPriority={isFirst ? 'high' : 'auto'}

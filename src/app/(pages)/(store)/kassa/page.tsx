@@ -18,7 +18,6 @@ export default function CheckoutDetailsPage() {
     phone: '',
   });
 
-  // orderId poistettu, ei enää käytössä
   const [error, setError] = useState<string | null>(null);
 
   const VAT_RATE = 25.5;

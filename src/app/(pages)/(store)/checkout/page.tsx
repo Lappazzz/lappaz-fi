@@ -27,7 +27,6 @@ export default function CheckoutPage() {
 
       <ul className="space-y-4 mb-6">
         {items.map((item: CartItem) => {
-          // Normalize options type for the cart context
           const options = item.options as Record<string, string> | undefined;
 
           return (

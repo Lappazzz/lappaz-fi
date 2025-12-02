@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         },
-        sitemap: 'https://lappaz.fi/sitemap.xml',
-        host: 'https://lappaz.fi',
+        sitemap: 'https://beta.lappaz.fi/sitemap.xml',
+        host: 'https://beta.lappaz.fi',
     };
 }

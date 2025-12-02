@@ -1,4 +1,3 @@
-// src/app/api/products/search/route.ts
 import { NextResponse } from 'next/server';
 
 const API_URL = process.env.WC_STORE_URL!;

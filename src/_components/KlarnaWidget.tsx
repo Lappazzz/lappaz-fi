@@ -48,7 +48,6 @@ type KlarnaCustomerPayload = {
 type KlarnaPayload = {
   items: KlarnaCartItemPayload[];
   customer: KlarnaCustomerPayload;
-  // vatRatePercent poistettu – ALV 25,5 % kovakoodattu backendissä
 };
 
 type KlarnaWidgetProps = {
