@@ -8,7 +8,7 @@ export default async function Home() {
   const categoryImages = [
     { name: "Autotarvikkeet", image: "/images/autotarvikkeet.webp", slug: "autotarvikkeet" },
     { name: "Sim modit", image: "/images/sim-modit.webp", slug: "sim-racing-modit" },
-    { name: "Lisämittaritelineet", image: "/images/lisämittaritelineet.webp", slug: "lisämittaritelineet" },
+    { name: "Lisämittaritelineet", image: "/images/lisämittaritelineet.webp", slug: "lisamittaritelineet" },
   ];
 
   const popularProducts: WooProduct[] = await getPopularProducts();
