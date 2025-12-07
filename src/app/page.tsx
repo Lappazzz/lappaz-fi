@@ -7,7 +7,7 @@ import type { WooProduct } from "@/types/woocommerce";
 export default async function Home() {
   const categoryImages = [
     { name: "Autotarvikkeet", image: "/images/autotarvikkeet.webp", slug: "autotarvikkeet" },
-    { name: "Sim modit", image: "/images/sim-modit.webp", slug: "sim-racing-modit" },
+    { name: "Sim modit", image: "/images/sim-modit.webp", slug: "sim-modit" },
     { name: "Lisämittaritelineet", image: "/images/lisämittaritelineet.webp", slug: "lisamittaritelineet" },
   ];
 
