@@ -26,8 +26,9 @@ export async function createWooOrder(
 const line_items = items.map((i) => ({
     product_id: Number(i.id),
     quantity: i.quantity,
-    total: i.price.toFixed(2),
+    total: (i.price * i.quantity).toFixed(2),
 }));
+
 
 const body = {
     payment_method: 'klarna',
